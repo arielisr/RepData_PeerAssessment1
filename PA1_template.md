@@ -2,34 +2,54 @@
 ## Ariel Israel, Jul 2013
 
 ## Loading and preprocessing the data
-```{r read_data,echo=TRUE}
+
+```r
 library(data.table)
+```
+
+```
+## Warning: package 'data.table' was built under R version 3.0.3
+```
+
+```r
 data<-fread('d:/datasets/repdata/activity.csv')
 ```
 
 ## What is mean total number of steps taken per day?
-```{r number_of_steps_per_day,echo=TRUE}
+
+```r
 steps_per_day<-data[,list(mean_steps=mean(steps,na.rm=T)),by='date']
 hist(steps_per_day$mean_steps,nclass=50,col='#ff2500',xlab='steps per day',main='histogram of steps per day')
+```
+
+![plot of chunk number_of_steps_per_day](figure/number_of_steps_per_day.png) 
+
+```r
 steps_summary=summary(steps_per_day$mean_steps)
 ```
-* mean steps per day: `r steps_summary['Mean']`
-* median steps per day: `r steps_summary['Median']`
+* mean steps per day: 37.4
+* median steps per day: 37.4
 
 ## What is the average daily activity pattern?
-```{r daily_activity_pattern,echo=TRUE}
+
+```r
 steps_per_interval<-data[,list(mean_steps=mean(steps,na.rm=T)),by='interval']
 plot(steps_per_interval$interval,steps_per_interval$mean_steps,xlab='steps per interval',main='time series steps per 5 minutes interval',type='l')
+```
+
+![plot of chunk daily_activity_pattern](figure/daily_activity_pattern.png) 
+
+```r
 interval_max=with(steps_per_interval,interval[which.max(mean_steps)])
 ```
-* 5 minutes interval containing the maximum number of steps: `r interval_max`
+* 5 minutes interval containing the maximum number of steps: 835
 
 
 ## Imputing missing values
-* missing values in the dataset: `r sum(is.na(data$steps))`
-
+* missing values in the dataset: 2304
 ## filling in with the missing values per day
-```{r imputing_missing_values,echo=TRUE}
+
+```r
 # replace missing values with the median for the interval
 data_imputed=data
 for (i in 1:nrow(data)) {
@@ -39,19 +59,16 @@ for (i in 1:nrow(data)) {
 }
 steps_per_day_imputed<-data_imputed[,list(mean_steps=mean(steps,na.rm=T)),by='date']
 hist(steps_per_day_imputed$mean_steps,nclass=50,col='#ff2500',xlab='steps per day',main='histogram of steps per day')
+```
+
+![plot of chunk imputing_missing_values](figure/imputing_missing_values.png) 
+
+```r
 steps_summary_imputed=summary(steps_per_day_imputed$mean_steps)
 ```
-* missing values in the imputed dataset: `r sum(is.na(data_imputed$steps))`
-* mean steps per day: `r steps_summary_imputed['Mean']`
-* median steps per day: `r steps_summary_imputed['Median']`
+* missing values in the imputed dataset: 0
+* mean steps per day: 37.4
+* median steps per day: 37.4
+
 
 ## Are there differences in activity patterns between weekdays and weekends?
-```{r weekday_differences,echo=TRUE}
-data$weekday=weekdays(strptime(data$date,'%Y-%m-%d'),abbreviate=T)
-data$weekday_or_weekend=factor(NA,levels=c('weekday','weekend'))
-data$weekday_or_weekend[data$weekday %in% c('Mon','Tue','Wed','Thu','Fri')]='weekday'
-data$weekday_or_weekend[data$weekday %in% c('Sat','Sun')]='weekend'
-steps_per_interval_weekday<-data[,list(mean_steps=mean(steps,na.rm=T)),by='interval,weekday_or_weekend']
-library(lattice)
-xyplot(mean_steps~interval|weekday_or_weekend,data=steps_per_interval_weekday,type='l',layout=c(1,2))
-```

@@ -47,6 +47,7 @@ interval_max=with(steps_per_interval,interval[which.max(mean_steps)])
 
 ## Imputing missing values
 * missing values in the dataset: 2304
+
 ## filling in with the missing values per day
 
 ```r
@@ -70,5 +71,16 @@ steps_summary_imputed=summary(steps_per_day_imputed$mean_steps)
 * mean steps per day: 37.4
 * median steps per day: 37.4
 
-
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```r
+data$weekday=weekdays(strptime(data$date,'%Y-%m-%d'),abbreviate=T)
+data$weekday_or_weekend=factor(NA,levels=c('weekday','weekend'))
+data$weekday_or_weekend[data$weekday %in% c('Mon','Tue','Wed','Thu','Fri')]='weekday'
+data$weekday_or_weekend[data$weekday %in% c('Sat','Sun')]='weekend'
+steps_per_interval_weekday<-data[,list(mean_steps=mean(steps,na.rm=T)),by='interval,weekday_or_weekend']
+library(lattice)
+xyplot(mean_steps~interval|weekday_or_weekend,data=steps_per_interval_weekday,type='l',layout=c(1,2))
+```
+
+![plot of chunk weekday_differences](figure/weekday_differences.png) 

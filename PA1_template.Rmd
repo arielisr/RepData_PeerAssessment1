@@ -7,18 +7,18 @@ library(data.table)
 data<-fread('d:/datasets/repdata/activity.csv')
 ```
 
-## What is mean total number of steps taken per day?
+## What is the sum of steps taken per day?
 ```{r number_of_steps_per_day,echo=TRUE}
-steps_per_day<-data[,list(mean_steps=mean(steps,na.rm=T)),by='date']
+steps_per_day<-data[,list(mean_steps=sum(steps,na.rm=T)),by='date']
 hist(steps_per_day$mean_steps,nclass=50,col='#ff2500',xlab='steps per day',main='histogram of steps per day')
 steps_summary=summary(steps_per_day$mean_steps)
 ```
-* mean steps per day: `r steps_summary['Mean']`
-* median steps per day: `r steps_summary['Median']`
+* mean steps per day: `r format(steps_summary['Mean'],big.mark = ",")`
+* median steps per day: `r format(steps_summary['Median'],big.mark = ",")`
 
 ## What is the average daily activity pattern?
 ```{r daily_activity_pattern,echo=TRUE}
-steps_per_interval<-data[,list(mean_steps=mean(steps,na.rm=T)),by='interval']
+steps_per_interval<-data[,list(mean_steps=sum(steps,na.rm=T)),by='interval']
 plot(steps_per_interval$interval,steps_per_interval$mean_steps,xlab='steps per interval',main='time series steps per 5 minutes interval',type='l')
 interval_max=with(steps_per_interval,interval[which.max(mean_steps)])
 ```
@@ -29,21 +29,25 @@ interval_max=with(steps_per_interval,interval[which.max(mean_steps)])
 * missing values in the dataset: `r sum(is.na(data$steps))`
 
 ## filling in with the missing values per day
+Algorithm: For each row in which steps are unavailable, we use the median number of steps for this interval of the day:
+
+- We do so by computing the median number of steps for each period of the day, and merging it with the original data under the column 'median_steps'
+- Each time the steps column im the data in NA, we replace it with the median_steps value.
 ```{r imputing_missing_values,echo=TRUE}
 # replace missing values with the median for the interval
-data_imputed=data
-for (i in 1:nrow(data)) {
-    if (is.na(data$steps[i])) {
-        data_imputed$steps[i]=steps_per_interval$mean_steps[steps_per_interval$interval==data$interval[i]]
-    }
-}
-steps_per_day_imputed<-data_imputed[,list(mean_steps=mean(steps,na.rm=T)),by='date']
+data_imputed=merge(data,data[,list(median_steps=median(steps,na.rm=T)),by='interval'],by='interval')
+to_fill_pos=is.na(data_imputed$steps)
+data_imputed$steps[to_fill_pos]=data_imputed$median_steps[to_fill_pos]
+data_imputed$median_steps=NULL
+steps_per_day_imputed<-data_imputed[,list(mean_steps=sum(steps,na.rm=T)),by='date']
 hist(steps_per_day_imputed$mean_steps,nclass=50,col='#ff2500',xlab='steps per day',main='histogram of steps per day')
 steps_summary_imputed=summary(steps_per_day_imputed$mean_steps)
 ```
 * missing values in the imputed dataset: `r sum(is.na(data_imputed$steps))`
-* mean steps per day: `r steps_summary_imputed['Mean']`
-* median steps per day: `r steps_summary_imputed['Median']`
+* mean steps per day: `r format(steps_summary_imputed['Mean'],big.mark = ",")`
+* median steps per day: `r format(steps_summary_imputed['Median'],big.mark = ",")`
+
+The imputation step changed slightly the mean number of steps, but not the median
 
 ## Are there differences in activity patterns between weekdays and weekends?
 ```{r weekday_differences,echo=TRUE}
